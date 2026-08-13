@@ -16,4 +16,13 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_the_assignments_page_is_available(): void
+    {
+        $response = $this->get('/assignments');
+
+        $response
+            ->assertStatus(200)
+            ->assertSee('Assignment Tracker');
+    }
 }
