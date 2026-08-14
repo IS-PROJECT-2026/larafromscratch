@@ -2,13 +2,14 @@
 
 A Laravel + Vite web app for tracking coursework assignments.
 
-Day 1 MVP includes:
+The tracker includes:
 
-- Create assignments with title, course, and due date
-- Display assignments in a list
-- Mark assignments as complete or undo
-- Delete assignments
-- Persist data in browser localStorage
+- Laravel Breeze registration, login, logout, password reset, and profile screens
+- Per-user assignments persisted in Sail MySQL
+- Create assignments with title, course, due date, and High/Medium/Low priority
+- Course filtering, title/course search, deadline-first list order, and completion progress
+- Navigable monthly calendar and red overdue indicators for incomplete past-due work
+- Responsive list and calendar views
 
 ## Tech Stack
 
@@ -19,8 +20,9 @@ Day 1 MVP includes:
 
 ## Routes
 
-- `/` - Assignment Tracker app (primary)
-- `/assignments` - Assignment Tracker app (alias)
+- `/` - authenticated Assignment Tracker app
+- `/assignments` - authenticated assignment JSON API (`GET`, `POST`, `PATCH /{id}`, `DELETE /{id}`)
+- `/register`, `/login`, `/forgot-password` - account screens
 
 ## Fresh Machine Setup
 
@@ -46,10 +48,11 @@ php artisan key:generate
 
 4. Configure your database connection in `.env`.
 
-5. Run database migrations.
+5. Start Sail and run database migrations.
 
 ```bash
-php artisan migrate
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate
 ```
 
 6. Install frontend dependencies.
@@ -99,7 +102,7 @@ npm run dev
 Then open:
 
 - App: http://127.0.0.1:8080
-- Tracker: http://127.0.0.1:8080/assignments
+- Create an account at http://127.0.0.1:8080/register, then sign in to use the tracker.
 
 ## Build for Production-like Local Testing
 
@@ -118,9 +121,8 @@ php artisan test
 
 ## Assignment Tracker Notes
 
-- Data is saved in browser localStorage (key: `assignment-tracker.items.v1`).
-- Data is browser-specific and device-specific.
-- Clearing browser storage will remove saved assignments.
+- Assignments are stored in the Sail MySQL database and belong to the signed-in user.
+- Existing browser localStorage data is intentionally not imported.
 
 ## Common Troubleshooting
 
