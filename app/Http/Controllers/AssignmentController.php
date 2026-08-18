@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateAssignmentRequest;
 use App\Models\Assignment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 class AssignmentController extends Controller
@@ -41,6 +42,29 @@ class AssignmentController extends Controller
         return response()->noContent();
     }
 
+    public function export(Request $request): StreamedResponse
+    {
+        $assignments = $request->user()->assignments()->orderBy('due_date')->orderBy('created_at')->get();
+
+        return response()->streamDownload(function () use ($assignments): void {
+            $stream = fopen('php://output', 'w');
+            fputcsv($stream, ['Title', 'Course', 'Due date', 'Priority', 'Study estimate (minutes)', 'Completed']);
+
+            foreach ($assignments as $assignment) {
+                fputcsv($stream, [
+                    $assignment->title,
+                    $assignment->course,
+                    $assignment->due_date->toDateString(),
+                    $assignment->priority,
+                    $assignment->estimated_minutes,
+                    $assignment->completed ? 'Yes' : 'No',
+                ]);
+            }
+
+            fclose($stream);
+        }, 'assignments.csv', ['Content-Type' => 'text/csv']);
+    }
+
     private function ensureOwner(Request $request, Assignment $assignment): void
     {
         abort_unless($assignment->user_id === $request->user()->id, Response::HTTP_NOT_FOUND);
@@ -54,6 +78,7 @@ class AssignmentController extends Controller
             'course' => $assignment->course,
             'dueDate' => $assignment->due_date->toDateString(),
             'priority' => $assignment->priority,
+            'estimatedMinutes' => $assignment->estimated_minutes,
             'completed' => $assignment->completed,
             'createdAt' => $assignment->created_at->toISOString(),
             'updatedAt' => $assignment->updated_at->toISOString(),

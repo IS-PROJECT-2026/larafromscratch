@@ -14,7 +14,10 @@ class StoreAssignmentRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['due_date' => $this->input('dueDate')]);
+        $this->merge([
+            'due_date' => $this->input('dueDate'),
+            'estimated_minutes' => $this->input('estimatedMinutes'),
+        ]);
     }
 
     public function rules(): array
@@ -24,6 +27,7 @@ class StoreAssignmentRequest extends FormRequest
             'course' => ['required', 'string', 'max:80'],
             'due_date' => ['required', 'date_format:Y-m-d'],
             'priority' => ['required', Rule::in(['high', 'medium', 'low'])],
+            'estimated_minutes' => ['nullable', 'integer', 'min:0', 'max:60000'],
         ];
     }
 }

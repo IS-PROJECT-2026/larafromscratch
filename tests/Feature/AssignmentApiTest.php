@@ -63,7 +63,7 @@ class AssignmentApiTest extends TestCase
             ->assertJsonPath('0.id', $earlier->id)
             ->assertJsonPath('1.id', $later->id)
             ->assertJsonPath('0.dueDate', '2026-09-10')
-            ->assertJsonStructure([['id', 'title', 'course', 'dueDate', 'priority', 'completed', 'createdAt', 'updatedAt']]);
+            ->assertJsonStructure([['id', 'title', 'course', 'dueDate', 'priority', 'estimatedMinutes', 'completed', 'createdAt', 'updatedAt']]);
     }
 
     public function test_a_user_can_create_and_complete_an_assignment(): void
@@ -75,11 +75,13 @@ class AssignmentApiTest extends TestCase
             'course' => 'Calculus II',
             'dueDate' => '2026-09-10',
             'priority' => 'high',
+            'estimatedMinutes' => 180,
         ]);
 
         $created->assertCreated()
             ->assertJsonPath('title', 'Chapter 5 Problem Set')
             ->assertJsonPath('priority', 'high')
+            ->assertJsonPath('estimatedMinutes', 180)
             ->assertJsonPath('completed', false);
 
         $assignmentId = $created->json('id');
@@ -87,6 +89,7 @@ class AssignmentApiTest extends TestCase
             'id' => $assignmentId,
             'user_id' => $user->id,
             'priority' => 'high',
+            'estimated_minutes' => 180,
             'completed' => 0,
         ]);
         $this->assertSame('2026-09-10', Assignment::findOrFail($assignmentId)->due_date->toDateString());
@@ -107,7 +110,8 @@ class AssignmentApiTest extends TestCase
             'course' => 'A course',
             'dueDate' => 'not-a-date',
             'priority' => 'urgent',
-        ])->assertUnprocessable()->assertJsonValidationErrors(['title', 'due_date', 'priority']);
+            'estimatedMinutes' => -1,
+        ])->assertUnprocessable()->assertJsonValidationErrors(['title', 'due_date', 'priority', 'estimated_minutes']);
 
         $assignment = Assignment::factory()->for($user)->create(['priority' => 'medium']);
         $this->assertSame('medium', $assignment->priority);
@@ -132,5 +136,41 @@ class AssignmentApiTest extends TestCase
         $user->delete();
 
         $this->assertDatabaseMissing('assignments', ['id' => $assignment->id]);
+    }
+
+    public function test_a_user_can_export_only_their_assignments_as_csv(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        Assignment::factory()->for($user)->create([
+            'title' => 'Essay, final draft',
+            'course' => 'History',
+            'due_date' => '2026-09-10',
+            'estimated_minutes' => 180,
+            'completed' => true,
+        ]);
+        Assignment::factory()->for($otherUser)->create(['title' => 'Private work']);
+
+        $response = $this->actingAs($user)->get('/assignments/export');
+
+        $response
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8')
+            ->assertHeader('content-disposition', 'attachment; filename=assignments.csv');
+
+        $this->assertStringContainsString('Title,Course,"Due date",Priority,"Study estimate (minutes)",Completed', $response->streamedContent());
+        $this->assertStringContainsString('"Essay, final draft",History,2026-09-10', $response->streamedContent());
+        $this->assertStringNotContainsString('Private work', $response->streamedContent());
+    }
+
+    public function test_a_user_can_save_their_theme_preference(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->putJson('/preferences/theme', ['theme' => 'dark'])
+            ->assertOk()
+            ->assertJsonPath('theme', 'dark');
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'theme_preference' => 'dark']);
     }
 }

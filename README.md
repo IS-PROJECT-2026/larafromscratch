@@ -15,7 +15,7 @@ The tracker includes:
 
 - PHP 8.3+
 - Laravel 13
-- Node.js 20+ and npm
+- Node.js and npm
 - Vite + Tailwind CSS 4
 
 ## Routes
@@ -33,67 +33,76 @@ git clone <your-repo-url>
 cd larafromscratch
 ```
 
-2. Install PHP dependencies.
+2. Run one-time setup.
 
 ```bash
-composer install
+./setup.sh
 ```
 
-3. Create environment file and app key.
+For unattended provisioning:
 
 ```bash
-cp .env.example .env
-php artisan key:generate
+./setup.sh --non-interactive
 ```
 
-4. Configure your database connection in `.env`.
+This setup script:
 
-5. Start Sail and run database migrations.
+- installs system prerequisites on Ubuntu/Debian (`php`, `composer`, `node`, `npm`, `docker`, `docker compose`)
+- installs backend and frontend dependencies
+- creates `.env` if missing
+- configures a permanent `sail` shell helper in your `~/.bashrc`
+- starts Sail and runs pending migrations
 
-```bash
-./vendor/bin/sail up -d
-./vendor/bin/sail artisan migrate
-```
+Notes:
 
-6. Install frontend dependencies.
-
-```bash
-npm install
-```
-
-7. Start development servers (see next section).
+- The script may prompt for your `sudo` password when installing system packages.
+- `--non-interactive` requires passwordless sudo (or running as root).
+- If Docker group membership is added during setup, log out and back in once.
+- Non-Ubuntu/Debian machines should install prerequisites manually, then rerun `./setup.sh`.
 
 ## Quick Setup (One Command)
 
 If your machine already has PHP, Composer, and Node/npm configured, you can run:
 
 ```bash
-composer run setup
+./setup.sh
 ```
 
-This project script installs backend and frontend dependencies, creates `.env` if missing, generates an app key, runs migrations, and builds frontend assets.
+This setup is idempotent and safe to re-run.
 
 ## Run in Development
 
-Use one of the following options.
+### Daily Commands
 
-### Option A: Single Command (Recommended)
-
-```bash
-composer run dev
-```
-
-This delegates to Laravel's dev orchestration command and runs everything needed for local development.
-
-### Option B: Two Terminals
-
-Terminal 1 (Laravel server):
+1. Start Sail services:
 
 ```bash
-php artisan serve
+sail up -d
 ```
 
-Terminal 2 (Vite dev server):
+2. Start frontend dev server:
+
+```bash
+npm run dev
+```
+
+3. Run common Laravel commands:
+
+```bash
+sail artisan migrate
+sail artisan test
+sail artisan queue:work
+```
+
+After setup, open a new terminal (or run `source ~/.bashrc`) and use Sail commands directly:
+
+```bash
+sail up -d
+sail down
+sail artisan migrate
+```
+
+Use npm from your host terminal:
 
 ```bash
 npm run dev
@@ -108,7 +117,7 @@ Then open:
 
 ```bash
 npm run build
-php artisan serve
+sail up -d
 ```
 
 This uses compiled assets from `public/build` instead of the Vite dev server.
@@ -116,7 +125,7 @@ This uses compiled assets from `public/build` instead of the Vite dev server.
 ## Run Tests
 
 ```bash
-php artisan test
+sail artisan test
 ```
 
 ## Assignment Tracker Notes
@@ -135,7 +144,7 @@ npm run dev
 2. App key missing:
 
 ```bash
-php artisan key:generate
+sail artisan key:generate
 ```
 
 3. Database migration errors:
@@ -144,7 +153,7 @@ php artisan key:generate
 - Re-run:
 
 ```bash
-php artisan migrate
+sail artisan migrate
 ```
 
 4. Frontend build issues:

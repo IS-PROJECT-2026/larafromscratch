@@ -12,7 +12,7 @@ class Assignment extends Model
     /** @use HasFactory<AssignmentFactory> */
     use HasFactory;
 
-    protected $fillable = ['title', 'course', 'due_date', 'priority', 'completed'];
+    protected $fillable = ['title', 'course', 'due_date', 'priority', 'estimated_minutes', 'completed'];
 
     protected $attributes = [
         'priority' => 'medium',
